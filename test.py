@@ -97,5 +97,10 @@ def find_split(dataset):
 dataset = np.loadtxt("clean_dataset.txt")
 #print(dataset[:5,:])
 
+x = find_split(dataset)
+print(x)
 
-print(find_split(dataset))
+left,right = split(dataset,int(x[0]),x[1])
+
+print(find_split(left))
+print(find_split(right))
