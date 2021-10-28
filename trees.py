@@ -108,18 +108,33 @@ def find_split(dataset):
 def decision_tree_learning(training_dataset, depth):
     unique_vals = np.unique(training_dataset[:,7])
     if unique_vals.size == 1:
-        return ({"leaf": True, "room": unique_vals[0]},depth)
-    else :
+        return ({"leaf": True, "room": int(unique_vals[0])},depth)
+    else:
         split_point = find_split(training_dataset)
         l_dataset, r_dataset = split(training_dataset,int(split_point[0]),split_point[1])
         l_branch, l_depth = decision_tree_learning(l_dataset,depth+1)
         r_branch, r_depth = decision_tree_learning(r_dataset,depth+1)
-        node = {"leaf": False, "attribute": split_point[0], "value": split_point[1], "left": l_branch, "right": r_branch}
+        node = {"leaf": False, "attribute": int(split_point[0]), "value": split_point[1], "left": l_branch, "right": r_branch}
         return (node, max(l_depth,r_depth))
 
+def classify(data, trained_tree):
+    if trained_tree["leaf"]:
+        return trained_tree["room"]
+    else:
+        if data[trained_tree["attribute"]] < trained_tree["value"]:
+            return classify(data, trained_tree["left"])
+        else:
+            return classify(data, trained_tree["right"])
 
+def evaluate(test_db, trained_tree):
+    correct = 0
+    for i in range(test_db.shape[0]):
+        if test_db[i,7] == classify(test_db[i,0:7],trained_tree):
+            correct += 1
+    return correct/test_db.shape[0]
+
+#Training the tree and testing it
 dataset = np.loadtxt("clean_dataset.txt")
-#print(dataset[:5,:])
-
-
-print(decision_tree_learning(dataset,0))
+tree, depth = decision_tree_learning(dataset,0)
+testset = np.loadtxt("noisy_dataset.txt")
+print(evaluate(testset,tree))
