@@ -8,9 +8,10 @@
 #   Varun Srivastava
 
 # ----------------------------------------------------------------------------------- #
-
 import numpy as np
-import matplotlib as plt
+import matplotlib as mlp
+mlp.use('gtk3agg')
+import matplotlib.pyplot as plt
 import math
 
 """
@@ -133,8 +134,30 @@ def evaluate(test_db, trained_tree):
             correct += 1
     return correct/test_db.shape[0]
 
+def plot_node(target_node,x,y):
+  max_width = 100
+  height = 5
+  depth=abs(y)/height
+  if target_node['leaf'] == False:
+      plot_node(target_node['left'],(x-(max_width)/(2**depth)),y-height)
+      plot_node(target_node['right'],(x+(max_width)/(2**depth)),y-height)
+      plt.plot([(x-(max_width)/(2**depth)),x,(x+(max_width)/(2**depth))],[y-height,y,y-height])
+      title = "[X%d < %4.2f]"%(target_node['attribute'],target_node['value'])
+  else:
+    title="Room: %d" %target_node['room']
+  plt.text(x, y, title, ha="center", va="center",
+            size=5,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="b", lw=2))
+    
+  plt.axis('off')  
+    
+    
+    
+    
 #Training the tree and testing it
 dataset = np.loadtxt("clean_dataset.txt")
 tree, depth = decision_tree_learning(dataset,0)
 testset = np.loadtxt("noisy_dataset.txt")
 print(evaluate(testset,tree))
+plot_node(tree,0,0)
+plt.show()
