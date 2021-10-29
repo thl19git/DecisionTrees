@@ -9,10 +9,10 @@
 
 # ----------------------------------------------------------------------------------- #
 import numpy as np
-import matplotlib as mlp
-mlp.use('gtk3agg')
 import matplotlib.pyplot as plt
 import math
+
+plt.figure(figsize=(10, 10))
 
 """
 split an array based on a threshold in a selected column
@@ -147,7 +147,7 @@ def plot_node(target_node,x,y):
     title="Room: %d" %target_node['room']
   plt.text(x, y, title, ha="center", va="center",
             size=5,
-            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="b", lw=2))
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="b", lw=0.5))
     
   plt.axis('off')  
     
@@ -161,3 +161,4 @@ testset = np.loadtxt("noisy_dataset.txt")
 print(evaluate(testset,tree))
 plot_node(tree,0,0)
 plt.show()
+plt.savefig('foo.pdf')
