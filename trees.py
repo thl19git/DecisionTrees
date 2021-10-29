@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(20, 10))
 
 """
 split an array based on a threshold in a selected column
@@ -135,7 +135,7 @@ def evaluate(test_db, trained_tree):
     return correct/test_db.shape[0]
 
 def plot_node(target_node,x,y):
-  max_width = 100
+  max_width = 200
   height = 5
   depth=abs(y)/height
   if target_node['leaf'] == False:
