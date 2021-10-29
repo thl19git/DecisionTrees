@@ -140,14 +140,11 @@ def evaluate_plus(test_db, trained_tree):
     recall = np.zeros(4)
     precision = np.zeros(4)
     f1 = np.zeros(4)
-    correct = 0
     for i in range(test_db.shape[0]):
         room = classify(test_db[i,0:7],trained_tree)
         gold = int(test_db[i,7])
-        if gold == room:
-            correct += 1
         cm[gold-1,room-1] += 1
-    accuracy = correct/test_db.shape[0]
+    accuracy = (cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3])/test_db.shape[0]
     cols = cm.sum(axis=0)
     rows = cm.sum(axis=1)
     for i in range(4):
