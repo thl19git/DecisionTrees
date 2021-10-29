@@ -119,13 +119,14 @@ def decision_tree_learning(training_dataset, depth):
 
 def classify(data, trained_tree):
     if trained_tree["leaf"]:
-        return trained_tree["room"]
+        return int(trained_tree["room"])
     else:
         if data[trained_tree["attribute"]] < trained_tree["value"]:
             return classify(data, trained_tree["left"])
         else:
             return classify(data, trained_tree["right"])
 
+#Evaluation function that returns accuracy
 def evaluate(test_db, trained_tree):
     correct = 0
     for i in range(test_db.shape[0]):
@@ -133,8 +134,31 @@ def evaluate(test_db, trained_tree):
             correct += 1
     return correct/test_db.shape[0]
 
+#Evaluation function that returns the confusion matrix, recall, precision, f1 and accuracy
+def evaluate_plus(test_db, trained_tree):
+    cm = np.zeros((4,4))
+    recall = np.zeros(4)
+    precision = np.zeros(4)
+    f1 = np.zeros(4)
+    correct = 0
+    for i in range(test_db.shape[0]):
+        room = classify(test_db[i,0:7],trained_tree)
+        gold = int(test_db[i,7])
+        if gold == room:
+            correct += 1
+        cm[gold-1,room-1] += 1
+    accuracy = correct/test_db.shape[0]
+    cols = cm.sum(axis=0)
+    rows = cm.sum(axis=1)
+    for i in range(4):
+        precision[i] = cm[i,i] / cols[i]
+        recall[i] = cm[i,i] / rows[i]
+        f1[i] = (2*precision[i]*recall[i])/(precision[i]+recall[i])
+    return cm, recall, precision, f1, accuracy
+    
+
 #Training the tree and testing it
 dataset = np.loadtxt("clean_dataset.txt")
 tree, depth = decision_tree_learning(dataset,0)
 testset = np.loadtxt("noisy_dataset.txt")
-print(evaluate(testset,tree))
+print(evaluate_plus(testset,tree))
