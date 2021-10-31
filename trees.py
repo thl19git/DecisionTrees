@@ -24,7 +24,7 @@ threshold: the threshold to split the array
 def split(arr, split_name, threshold):
     left_split = arr[arr[:,split_name] < threshold]
     right_split = arr[arr[:,split_name] >= threshold]
-    
+
     return left_split,right_split
 
 
@@ -82,17 +82,17 @@ def highest_information_gain(dataset, target_column):
         ordered_dataset = dataset[np.argsort(dataset[:,col])] #sort the dataset based on the current column
 
         unique_vals = np.unique(ordered_dataset[:,col]) #get all the unique values in the current column
-        
+
         for i in range(unique_vals.shape[0]-1):
             first_val = unique_vals[i]
             second_val = unique_vals[i+1]
             threshold = (first_val+second_val)/2 #find the current threshold
-        
+
             information_gain = calc_information_gain(dataset,col,target_column,threshold)
             information_gains = np.vstack((information_gains,np.array([col,threshold,information_gain])))
-                
+
     max_index = np.argmax(information_gains[:,2]) #find the max information gain
-    
+
     return information_gains[max_index]
 
 
@@ -141,14 +141,11 @@ def evaluate_plus(test_db, trained_tree):
     recall = np.zeros(4)
     precision = np.zeros(4)
     f1 = np.zeros(4)
-    correct = 0
     for i in range(test_db.shape[0]):
         room = classify(test_db[i,0:7],trained_tree)
         gold = int(test_db[i,7])
-        if gold == room:
-            correct += 1
         cm[gold-1,room-1] += 1
-    accuracy = correct/test_db.shape[0]
+    accuracy = (cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3])/test_db.shape[0]
     cols = cm.sum(axis=0)
     rows = cm.sum(axis=1)
     for i in range(4):
@@ -156,7 +153,7 @@ def evaluate_plus(test_db, trained_tree):
         recall[i] = cm[i,i] / rows[i]
         f1[i] = (2*precision[i]*recall[i])/(precision[i]+recall[i])
     return cm, recall, precision, f1, accuracy
-    
+
 """
 #Training the tree and testing it
 dataset = np.loadtxt("clean_dataset.txt")
@@ -180,7 +177,7 @@ def train_test_k_fold(n_folds,n_instances,random_generator=default_rng()):
         train_indices = np.hstack(split_indices[:k] + split_indices[k+1:])
         folds.append([train_indices,test_indices])
     return folds
-    
+
 
 def cross_validation(dataset,n_folds):
     #Training the tree and testing it
@@ -199,5 +196,5 @@ def cross_validation(dataset,n_folds):
     eval_metrics = np.array(eval_metrics,dtype=object)
 
     return eval_metrics
-    
+
 print(cross_validation("clean_dataset.txt",10))
