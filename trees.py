@@ -10,6 +10,7 @@
 # ----------------------------------------------------------------------------------- #
 
 import numpy as np
+from numpy.random import default_rng
 import matplotlib as plt
 import math
 
@@ -156,9 +157,47 @@ def evaluate_plus(test_db, trained_tree):
         f1[i] = (2*precision[i]*recall[i])/(precision[i]+recall[i])
     return cm, recall, precision, f1, accuracy
     
-
+"""
 #Training the tree and testing it
 dataset = np.loadtxt("clean_dataset.txt")
 tree, depth = decision_tree_learning(dataset,0)
 testset = np.loadtxt("noisy_dataset.txt")
 print(evaluate_plus(testset,tree))
+"""
+
+def k_fold_split(n_splits,n_instances,random_generator=default_rng()):
+    shuffled_indices = random_generator.permutation(n_instances)
+    split_indices = np.array_split(shuffled_indices,n_splits)
+    return split_indices
+
+
+def train_test_k_fold(n_folds,n_instances,random_generator=default_rng()):
+    split_indices = k_fold_split(n_folds,n_instances,random_generator)
+
+    folds = []
+    for k in range(n_folds):
+        test_indices = split_indices[k]
+        train_indices = np.hstack(split_indices[:k] + split_indices[k+1:])
+        folds.append([train_indices,test_indices])
+    return folds
+    
+
+def cross_validation(dataset,n_folds):
+    #Training the tree and testing it
+    dataset = np.loadtxt(dataset)
+    np.random.shuffle(dataset)
+
+    eval_metrics = []
+    for i,(train_indices,test_indices)in enumerate(train_test_k_fold(n_folds,len(dataset))):
+        train = dataset[train_indices,:]
+        test = dataset[test_indices,:]
+
+        tree,depth = decision_tree_learning(train,0)
+        acc = evaluate_plus(test,tree)
+        eval_metrics.append(acc)
+
+    eval_metrics = np.array(eval_metrics,dtype=object)
+
+    return eval_metrics
+    
+print(cross_validation("clean_dataset.txt",10))
