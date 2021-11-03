@@ -135,24 +135,33 @@ def evaluate(test_db, trained_tree):
             correct += 1
     return correct/test_db.shape[0]
 
-#Evaluation function that returns the confusion matrix, recall, precision, f1 and accuracy
-def evaluate_plus(test_db, trained_tree):
+#Evaluation function that returns the confusion matrix
+def evaluate_cm(test_db, trained_tree):
     cm = np.zeros((4,4))
-    recall = np.zeros(4)
-    precision = np.zeros(4)
-    f1 = np.zeros(4)
     for i in range(test_db.shape[0]):
         room = classify(test_db[i,0:7],trained_tree)
         gold = int(test_db[i,7])
         cm[gold-1,room-1] += 1
-    accuracy = (cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3])/test_db.shape[0]
+    return cm
+
+def calc_metrics(cm):
+    recall = np.zeros(4)
+    precision = np.zeros(4)
+    f1 = np.zeros(4)
+    accuracy = (cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3])/cm.sum()
     cols = cm.sum(axis=0)
     rows = cm.sum(axis=1)
     for i in range(4):
         precision[i] = cm[i,i] / cols[i]
         recall[i] = cm[i,i] / rows[i]
         f1[i] = (2*precision[i]*recall[i])/(precision[i]+recall[i])
-    return cm, recall, precision, f1, accuracy
+    return recall, precision, f1, accuracy
+
+#Evaluation function that returns the confusion matrix, recall, precision, f1 and accuracy
+def evaluate_plus(test_db, trained_tree):
+    cm = evaluate_cm(test_db, trained_tree)
+    return (cm,) + calc_metrics(cm)
+
 
 """
 #Training the tree and testing it
@@ -184,17 +193,16 @@ def cross_validation(dataset,n_folds):
     dataset = np.loadtxt(dataset)
     np.random.shuffle(dataset)
 
-    eval_metrics = []
+    cm = np.zeros((4,4))
     for i,(train_indices,test_indices)in enumerate(train_test_k_fold(n_folds,len(dataset))):
         train = dataset[train_indices,:]
         test = dataset[test_indices,:]
 
         tree,depth = decision_tree_learning(train,0)
-        acc = evaluate_plus(test,tree)
-        eval_metrics.append(acc)
+        cm += evaluate_cm(test,tree)
 
-    eval_metrics = np.array(eval_metrics,dtype=object)
+    metrics = calc_metrics(cm)
 
-    return eval_metrics
+    return (cm/n_folds,) + metrics
 
 print(cross_validation("clean_dataset.txt",10))
