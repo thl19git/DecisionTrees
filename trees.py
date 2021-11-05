@@ -11,8 +11,10 @@
 
 import numpy as np
 from numpy.random import default_rng
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import math
+
+
 
 """
 split an array based on a threshold in a selected column
@@ -22,9 +24,10 @@ split_name: column which is being compared
 threshold: the threshold to split the array
 """
 def split(arr, split_name, threshold):
+    if arr.size == 0:
+        return np.array([]), np.array([])
     left_split = arr[arr[:,split_name] < threshold]
     right_split = arr[arr[:,split_name] >= threshold]
-
     return left_split,right_split
 
 
@@ -163,14 +166,6 @@ def evaluate_plus(test_db, trained_tree):
     return (cm,) + calc_metrics(cm)
 
 
-"""
-#Training the tree and testing it
-dataset = np.loadtxt("clean_dataset.txt")
-tree, depth = decision_tree_learning(dataset,0)
-testset = np.loadtxt("noisy_dataset.txt")
-print(evaluate_plus(testset,tree))
-"""
-
 def k_fold_split(n_splits,n_instances,random_generator=default_rng()):
     shuffled_indices = random_generator.permutation(n_instances)
     split_indices = np.array_split(shuffled_indices,n_splits)
@@ -187,22 +182,139 @@ def train_test_k_fold(n_folds,n_instances,random_generator=default_rng()):
         folds.append([train_indices,test_indices])
     return folds
 
-
+#Returns the confusion matrix, metrics and average depth
 def cross_validation(dataset,n_folds):
-    #Training the tree and testing it
     dataset = np.loadtxt(dataset)
     np.random.shuffle(dataset)
-
     cm = np.zeros((4,4))
     for i,(train_indices,test_indices)in enumerate(train_test_k_fold(n_folds,len(dataset))):
         train = dataset[train_indices,:]
         test = dataset[test_indices,:]
-
         tree,depth = decision_tree_learning(train,0)
         cm += evaluate_cm(test,tree)
-
     metrics = calc_metrics(cm)
-
     return (cm/n_folds,) + metrics
 
+def majority(vals,counts):
+    max_count = max(counts)
+    rooms = []
+    for i,item in enumerate(vals):
+        if counts[i] == max_count:
+            rooms.append(item)
+    return rooms
+
+def plot_node(target_node,x,y):
+    max_width = 200
+    height = 5
+    depth=abs(y)/height
+    if target_node['leaf'] == False:
+        plot_node(target_node['left'],(x-(max_width)/(2**depth)),y-height)
+        plot_node(target_node['right'],(x+(max_width)/(2**depth)),y-height)
+        plt.plot([(x-(max_width)/(2**depth)),x,(x+(max_width)/(2**depth))],[y-height,y,y-height])
+        title = "[X%d < %4.2f]"%(target_node['attribute'],target_node['value'])
+    else:
+        title="Room: %d" %target_node['room']
+    plt.text(x, y, title, ha="center", va="center",
+            size=5,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="b", lw=0.5))
+    
+    plt.axis('off')  
+
+
+# Returns the pruned tree, a bool indicating whether anything changed, and the maximum depth
+def prune(tree,training_set,validation_set,depth):
+    if tree["leaf"]:
+        return tree, False, depth
+    elif tree["left"]["leaf"] and tree["right"]["leaf"]:
+    # Do pruning in here:
+        unique_vals, counts = np.unique(training_set[:,7], return_counts=True)
+        majority_rooms = majority(unique_vals,counts)
+        if validation_set.size == 0:
+            new_correct = 1
+            old_correct = 0
+            room = majority_rooms[0]
+        else:
+            v_vals, v_counts = np.unique(validation_set[:,7], return_counts=True)
+            v_dict = dict(zip(v_vals,v_counts))
+            l_val, r_val = split(validation_set,tree["attribute"],tree["value"])
+            l_unique, l_counts = np.unique(l_val[:,7], return_counts=True)
+            r_unique, r_counts = np.unique(r_val[:,7], return_counts=True)
+            l_dict = dict(zip(l_unique,l_counts))
+            r_dict = dict(zip(r_unique,r_counts))
+            if tree["left"]["room"] in l_dict:
+                l_correct = l_dict[tree["left"]["room"]]
+            else:
+                l_correct = 0
+            if tree["right"]["room"] in r_dict:
+                r_correct = r_dict[tree["right"]["room"]]
+            else:
+                r_correct = 0
+            old_correct = l_correct + r_correct 
+            #Calculate new accuracy
+            new_correct = 0
+            max_correct = 0
+            best_room = 0
+            for r in majority_rooms:
+                if r in v_dict:
+                    new_correct = v_dict[r]
+                    if new_correct > max_correct:
+                        max_correct = new_correct
+                        best_room = r
+            new_correct = max_correct
+            room = best_room
+        #   Compare accuracy using majority label vs existing decision
+        if new_correct >= old_correct:
+            return {"leaf": True, "room": room}, True, depth
+        else:
+            return tree, False, depth+1 #leave it unchanged
+    else:
+        l_train, r_train = split(training_set,tree["attribute"],tree["value"])
+        l_val, r_val = split(validation_set,tree["attribute"],tree["value"])
+        left_tree, cl, dl = prune(tree["left"], l_train, l_val, depth+1)
+        right_tree, cr, dr = prune(tree["right"], r_train, r_val, depth+1)
+        return {"leaf": False, "attribute": tree["attribute"], "value": tree["value"], "left": left_tree, "right": right_tree}, cl or cr, max(dl,dr)
+
+# Returns confusion matrix, average unpruned depth and average pruned depth
+def internal_validation(dataset,test_set,n_folds):
+    cm = np.zeros((4,4))
+    unpruned_depth = 0
+    pruned_depth = 0
+    for i,(train_indices,val_indices)in enumerate(train_test_k_fold(n_folds,len(dataset))):
+        train = dataset[train_indices,:]
+        val = dataset[val_indices,:]
+        unpruned_tree,depth = decision_tree_learning(train,0)
+        #plt.figure(figsize=(20, 10))
+        #plot_node(unpruned_tree,0,0)
+        #plt.savefig('unpruned.pdf')
+        unpruned_depth += depth
+        changed = True
+        while changed:
+            pruned_tree, changed, depth = prune(unpruned_tree,train,val,0)
+            unpruned_tree = pruned_tree
+        #plt.figure(figsize=(20, 10))
+        #plot_node(pruned_tree,0,0)
+        #plt.savefig('pruned.pdf')
+        cm += evaluate_cm(test_set,pruned_tree)
+        pruned_depth += depth
+    return cm/n_folds, unpruned_depth/n_folds, pruned_depth/n_folds
+        
+# Returns confusion matrix, metrics, average unpruned depth and average pruned depth
+def nested_cross_validation(dataset,n_folds):
+    dataset = np.loadtxt(dataset)
+    np.random.shuffle(dataset)
+    cm = np.zeros((4,4))
+    unpruned_depth = 0
+    pruned_depth = 0
+    for i,(train_indices,test_indices)in enumerate(train_test_k_fold(n_folds,len(dataset))):
+        train = dataset[train_indices,:]
+        test = dataset[test_indices,:]
+        matrix, u_depth, p_depth = internal_validation(train,test,n_folds)
+        cm += matrix
+        unpruned_depth += u_depth
+        pruned_depth += p_depth
+    metrics = calc_metrics(cm)
+    return (cm/n_folds,) + metrics + (unpruned_depth/n_folds,pruned_depth/n_folds)
+
 print(cross_validation("clean_dataset.txt",10))
+
+print(nested_cross_validation("clean_dataset.txt",10))
