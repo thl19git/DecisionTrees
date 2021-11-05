@@ -23,7 +23,7 @@ Pretty Print Functions
 ## Example Code
 To train a tree on a dataset, run the following:
 ```
-    tree, depth = decision_tree_learning("clean_dataset.txt",0)
+tree, depth = decision_tree_learning("clean_dataset.txt",0)
 ```
 To evaluate a tree, there are three different functions that can be used, which return different metrics.
 To obtain the accuracy run:
@@ -31,6 +31,7 @@ To obtain the accuracy run:
 evaluate(tree, test_set)
 ```
 To obtain the confusion matrix run:
+```
 evaluate_cm(tree, test_set)
 ```
 To obtain a tuple of the confusion matrix, recall, precision, f1, accuracy run:
