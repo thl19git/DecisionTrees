@@ -28,7 +28,7 @@ The code is executed by running the following in a terminal:
 ```
 python3 trees.py
 ```
-
+The following are all adjustments to be made within the python file:
 To train a tree on a dataset, run the following:
 ```
 tree, depth = decision_tree_learning("clean_dataset.txt",0)
