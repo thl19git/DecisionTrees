@@ -21,6 +21,14 @@ Pretty Print Functions
 - pretty_print_depth(cm, recall, precision, f1, accuracy, unpruned_depth, pruned_depth) - prints out metrics including depths
 
 ## Example Code
+All code is in trees.py.
+At the end of the file specify what you would like to run, either by uncommented the suggested code or by writing your own.
+By default the program will run a simple 10-fold cross validation on the clean dataset.
+The code is executed by running the following in a terminal:
+```
+python3 trees.py
+```
+
 To train a tree on a dataset, run the following:
 ```
 tree, depth = decision_tree_learning("clean_dataset.txt",0)
