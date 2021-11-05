@@ -11,10 +11,36 @@
 
 import numpy as np
 from numpy.random import default_rng
-import matplotlib.pyplot as plt
+#Uncomment the next line 
+#import matplotlib.pyplot as plt
 import math
 
+def pretty_print_depth(cm,recall,precision,f1,accuracy,unpruned_depth,pruned_depth):
+    pretty_print(cm,recall,precision,f1,accuracy)
+    print("\nAverage Depth")
+    print("Unpruned: " + str(round(unpruned_depth,2)))
+    print("Pruned: " + str(round(pruned_depth,2)))
 
+def pretty_print(cm,recall,precision,f1,accuracy):
+    print("Confusion Matrix")
+    print(cm)
+    print("\nRecall")
+    print("Room 1: " + str(round(recall[0],3)))
+    print("Room 2: " + str(round(recall[1],3)))
+    print("Room 3: " + str(round(recall[2],3)))
+    print("Room 4: " + str(round(recall[3],3)))
+    print("\nPrecision")
+    print("Room 1: " + str(round(precision[0],3)))
+    print("Room 2: " + str(round(precision[1],3)))
+    print("Room 3: " + str(round(precision[2],3)))
+    print("Room 4: " + str(round(precision[3],3)))
+    print("\nF1")
+    print("Room 1: " + str(round(f1[0],3)))
+    print("Room 2: " + str(round(f1[1],3)))
+    print("Room 3: " + str(round(f1[2],3)))
+    print("Room 4: " + str(round(f1[3],3)))
+    print("\nAccuracy")
+    print(str(round(accuracy,3)))
 
 """
 split an array based on a threshold in a selected column
@@ -203,6 +229,7 @@ def majority(vals,counts):
             rooms.append(item)
     return rooms
 
+
 def plot_node(target_node,x,y):
     max_width = 200
     height = 5
@@ -315,6 +342,21 @@ def nested_cross_validation(dataset,n_folds):
     metrics = calc_metrics(cm)
     return (cm/n_folds,) + metrics + (unpruned_depth/n_folds,pruned_depth/n_folds)
 
-print(cross_validation("clean_dataset.txt",10))
+#Simple cross-validation
+cm, recall, precision, f1, accuracy = cross_validation("clean_dataset.txt",10)
+pretty_print(cm,recall,precision,f1,accuracy)
 
-print(nested_cross_validation("clean_dataset.txt",10))
+'''
+#Uncomment for nested cross-validation
+cm, recall, precision, f1, accuracy, unpruned_depth, pruned_depth = nested_cross_validation("clean_dataset.txt",10)
+pretty_print_depth(cm,recall,precision,f1,accuracy,unpruned_depth,pruned_depth)
+'''
+
+'''
+#Uncomment for tree visualisation
+dataset = np.loadtxt("clean_dataset.txt")
+tree, depth = decision_tree_learning(dataset,0)
+plt.figure(figsize=(20, 10))
+plot_node(tree,0,0)
+plt.savefig('tree.pdf')
+'''
