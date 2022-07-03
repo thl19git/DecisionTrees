@@ -1,5 +1,8 @@
 # DecisionTrees
 
+# About
+This coursework involved using decision trees to identify which room wifi strength measurements were taken from. The main code is in trees.py.
+
 ## Functions
 Evaluation Functions
 - evaluate(test_db, trained_tree) - returns accuracy
